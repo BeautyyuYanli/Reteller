@@ -45,9 +45,6 @@ async def main():
         use_ssl = True
         ssl_context.load_cert_chain(ssl_cert, ssl_key)
 
-    loop = asyncio.get_running_loop()
-    stop = loop.create_future()
-    loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
     async with websockets.serve(serve, "0.0.0.0", os.getenv("PORT"), ssl=ssl_context if use_ssl else None):
         await asyncio.Future()
 
