@@ -1,3 +1,4 @@
+import signal
 import websockets
 import asyncio
 import os
@@ -34,7 +35,12 @@ async def serve(websocket, path):
 
 
 async def main():
-    async with websockets.serve(serve, os.getenv("WS_HOST"), os.getenv("WS_PORT")):
+    loop = asyncio.get_running_loop()
+    stop = loop.create_future()
+    loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
+    loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
+    async with websockets.serve(serve, "", os.getenv("PORT")):
         await asyncio.Future()
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
