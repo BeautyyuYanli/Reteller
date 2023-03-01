@@ -7,10 +7,10 @@ from logging import debug, info, warning, error, critical
 
 class Config:
     start_prompt = {
-        "head": "将以下文段翻译成简体中文，使用ChatGPT翻译，不要使用其它软件，不要修改其中的公式、术语、引用链接和代码，语句应通顺且符合简体中文习惯。",
+        "head": "将以下整个文段使用ChatGPT翻译成简体中文并润色，不要使用其它软件，不要修改其中的公式、术语、引用链接和代码，语句应通顺且符合简体中文习惯。",
         "exclude_head": "不要翻译这些词语：",
         "exclude": [],
-        "tail": "输出为markdown格式。直接回答翻译结果，不要回复其它内容。\n\n"
+        "tail": "输出为markdown格式。只回答翻译结果，不要回复其它内容。\n\n"
     }
     conti_prompt = "继续翻译：\n"
     lett_limit = 2000
