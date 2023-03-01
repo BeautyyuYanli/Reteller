@@ -3,6 +3,7 @@ import websockets
 import asyncio
 import os
 import json
+import ssl
 from modules.translator import Translator
 from logging import warning
 
@@ -35,10 +36,19 @@ async def serve(websocket, path):
 
 
 async def main():
+
+    use_ssl = False
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ssl_cert = os.getenv("SSL_CERT_FILE")
+    ssl_key = os.getenv("SSL_KEY_FILE")
+    if ssl_cert is not None and ssl_key is not None:
+        use_ssl = True
+        ssl_context.load_cert_chain(ssl_cert, ssl_key)
+
     loop = asyncio.get_running_loop()
     stop = loop.create_future()
     loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
-    async with websockets.serve(serve, "", os.getenv("PORT")):
+    async with websockets.serve(serve, "0.0.0.0", os.getenv("PORT"), ssl=ssl_context if use_ssl else None):
         await asyncio.Future()
 
 if __name__ == "__main__":

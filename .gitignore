@@ -1,2 +1,4 @@
 __pycache__/
 .env
+localhost-key.pem
+localhost.pem
