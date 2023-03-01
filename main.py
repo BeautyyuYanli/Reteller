@@ -25,7 +25,7 @@ async def serve(websocket, path):
         j = json.loads(message)
         break
 
-    async for i in generate(j["text"], j["cookies"], j.get("exclude")):
+    async for i in generate(j["text"], j["cookies"], j.get("excludes")):
         try:
             await websocket.send(i)
         except websockets.exceptions.ConnectionClosed:
@@ -37,7 +37,6 @@ async def serve(websocket, path):
 async def main():
     loop = asyncio.get_running_loop()
     stop = loop.create_future()
-    loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
     loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
     async with websockets.serve(serve, "", os.getenv("PORT")):
         await asyncio.Future()
