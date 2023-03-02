@@ -1,6 +1,6 @@
 # Reteller
 
-基于 AI 的全文翻译工具
+基于 AI 的全文翻译工具. 针对 Markdown 排版.
 
 ## Setup
 
