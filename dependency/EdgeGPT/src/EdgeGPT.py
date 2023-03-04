@@ -1,18 +1,17 @@
 """
 Main.py
 """
-import argparse
-import asyncio
-import json
 import os
-import random
-import readline
 import sys
-from typing import Generator
-from typing import Optional
+import json
 import uuid
+import random
+import asyncio
+import argparse
+from enum import Enum
+from typing import Generator, Optional
 
-import tls_client
+import requests
 import websockets.client as websockets
 
 DELIMITER = "\x1e"
@@ -50,6 +49,12 @@ class NotAllowedToAccess(Exception):
     pass
 
 
+class ConversationStyle(Enum):
+    creative = "h3imaginative"
+    balanced = "harmonyv3"
+    precise = "h3precise"
+
+
 def append_identifier(msg: dict) -> str:
     """
     Appends special character to end of message to identify end of message
@@ -77,19 +82,25 @@ class ChatHubRequest:
         self.conversation_signature: str = conversation_signature
         self.invocation_id: int = invocation_id
 
-    def update(
-        self,
-        prompt: str,
-        options: list = [
-            "deepleo",
-            "enable_debug_commands",
-            "disable_emoji_spoken_text",
-            "enablemm",
-        ],
-    ) -> None:
+    def update(self, prompt: str, conversation_style: Optional[ConversationStyle], options: Optional[list] = None) -> None:
         """
         Updates request object
         """
+        if options is None:
+            options = [
+                "deepleo",
+                "enable_debug_commands",
+                "disable_emoji_spoken_text",
+                "enablemm",
+            ]
+        if conversation_style:
+            options = [
+                "deepleo",
+                "enable_debug_commands",
+                "disable_emoji_spoken_text",
+                "enablemm",
+                conversation_style.value,
+            ]
         self.struct = {
             "arguments": [
                 {
@@ -128,15 +139,17 @@ class Conversation:
             "conversationSignature": None,
             "result": {"value": "Success", "message": None},
         }
-        self.session = tls_client.Session(client_identifier="chrome_108")
+        self.session = requests.Session()
+        self.session.headers.update(
+            {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"})
         if cookies is not None:
             cookie_file = cookies
         else:
-            if cookiePath == "":
-                f = open(os.environ.get("COOKIE_FILE"),
-                         encoding="utf-8").read()
-            else:
-                f = open(cookiePath, encoding="utf8").read()
+            f = (
+                open(cookiePath, encoding="utf8").read()
+                if cookiePath
+                else open(os.environ.get("COOKIE_FILE"), encoding="utf-8").read()
+            )
             cookie_file = json.loads(f)
         for cookie in cookie_file:
             self.session.cookies.set(cookie["name"], cookie["value"])
@@ -144,7 +157,7 @@ class Conversation:
         # Send GET request
         response = self.session.get(
             url,
-            timeout_seconds=30,
+            timeout=30,
             headers=HEADERS,
             allow_redirects=True,
         )
@@ -178,20 +191,14 @@ class ChatHub:
             conversation_id=conversation.struct["conversationId"],
         )
 
-    async def ask_stream(self, prompt: str) -> Generator[str, None, None]:
+    async def ask_stream(
+        self, prompt: str, conversation_style: Optional[ConversationStyle] = None
+    ) -> Generator[str, None, None]:
         """
         Ask a question to the bot
         """
         # Check if websocket is closed
-        if self.wss:
-            if self.wss.closed:
-                self.wss = await websockets.connect(
-                    "wss://sydney.bing.com/sydney/ChatHub",
-                    extra_headers=HEADERS,
-                    max_size=None,
-                )
-                await self.__initial_handshake()
-        else:
+        if self.wss and self.wss.closed or not self.wss:
             self.wss = await websockets.connect(
                 "wss://sydney.bing.com/sydney/ChatHub",
                 extra_headers=HEADERS,
@@ -199,7 +206,8 @@ class ChatHub:
             )
             await self.__initial_handshake()
         # Construct a ChatHub request
-        self.request.update(prompt=prompt)
+        self.request.update(
+            prompt=prompt, conversation_style=conversation_style)
         # Send request
         await self.wss.send(append_identifier(self.request.struct))
         final = False
@@ -225,9 +233,8 @@ class ChatHub:
         """
         Close the connection
         """
-        if self.wss:
-            if not self.wss.closed:
-                await self.wss.close()
+        if self.wss and not self.wss.closed:
+            await self.wss.close()
 
 
 class Chatbot:
@@ -241,20 +248,20 @@ class Chatbot:
         self.chat_hub: ChatHub = ChatHub(
             Conversation(self.cookiePath, self.cookies))
 
-    async def ask(self, prompt: str) -> dict:
+    async def ask(self, prompt: str, conversation_style: ConversationStyle = None) -> dict:
         """
         Ask a question to the bot
         """
-        async for final, response in self.chat_hub.ask_stream(prompt=prompt):
+        async for final, response in self.chat_hub.ask_stream(prompt=prompt, conversation_style=conversation_style):
             if final:
                 return response
         self.chat_hub.wss.close()
 
-    async def ask_stream(self, prompt: str) -> Generator[str, None, None]:
+    async def ask_stream(self, prompt: str, conversation_style: ConversationStyle = None) -> Generator[str, None, None]:
         """
         Ask a question to the bot
         """
-        async for response in self.chat_hub.ask_stream(prompt=prompt):
+        async for response in self.chat_hub.ask_stream(prompt=prompt, conversation_style=conversation_style):
             yield response
 
     async def close(self):

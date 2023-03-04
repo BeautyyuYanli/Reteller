@@ -1,4 +1,4 @@
-from dependency.EdgeGPT.src.EdgeGPT import Chatbot
+from dependency.EdgeGPT.src.EdgeGPT import Chatbot, ConversationStyle
 from typing import List
 import asyncio
 import re
@@ -7,14 +7,14 @@ from logging import debug, info, warning, error, critical
 
 class Config:
     start_prompt = {
-        "head": "将以下整个文段使用ChatGPT翻译成简体中文并润色，不要使用其它软件，不要修改其中的公式、术语、引用链接和代码，语句应通顺且符合简体中文习惯。",
-        "exclude_head": "不要翻译这些词语：",
+        "head": "将以下整个文段使用ChatGPT翻译成简体中文并**润色**，不要使用其它软件，不要修改其中的公式、术语、引用链接和代码，语句应通顺且符合简体中文习惯。",
+        "exclude_head": "**不要**翻译这些词语：",
         "exclude": [],
-        "tail": "输出为markdown格式。只回答翻译结果，不要回复其它内容。\n\n"
+        "tail": "输出为markdown格式。只回答翻译结果，**不要**回复其它内容。\n\n"
     }
     conti_prompt = "继续翻译：\n"
     lett_limit = 2000
-    conv_limit = 5
+    conv_limit = 8
 
     def start_prompt_str(self):
         if len(self.start_prompt["exclude"]) == 0:
@@ -52,7 +52,7 @@ class Translator:
         for t in texts:
             await self.reset()
             for i in t:
-                async for [finished, j] in self.bot.ask_stream(i):
+                async for [finished, j] in self.bot.ask_stream(i, conversation_style=ConversationStyle.precise):
                     if not finished:
                         yield {"status": "ok", "type": "data", "data": j}
                 yield {"status": "ok", "type": "conversation_finished"}
