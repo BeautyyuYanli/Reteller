@@ -1,4 +1,4 @@
 asyncio
 websockets
-
+EdgeGPT>=0.0.54
 tls-client

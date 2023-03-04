@@ -1,4 +1,4 @@
-from dependency.EdgeGPT.src.EdgeGPT import Chatbot, ConversationStyle
+from EdgeGPT import Chatbot, ConversationStyle
 from typing import List
 import asyncio
 import re
