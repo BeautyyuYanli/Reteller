@@ -1,6 +1,9 @@
 # Reteller
 
-基于 AI 的全文翻译工具. 针对 Markdown 排版.
+基于 AI (New Bing) 的全文翻译工具. 针对 Markdown 排版.
+
+![image](https://user-images.githubusercontent.com/32453863/222956227-33c02536-dde7-4485-88d1-555b0ca05ee5.png)
+
 
 ## Setup
 
